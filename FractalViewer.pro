@@ -18,6 +18,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    headers/OpenGlViewer/utilsoperation.cpp \
     main.cpp \
     sources/mainappwindow.cpp \
     sources/mainwindow.cpp \
@@ -25,6 +26,7 @@ SOURCES += \
 
 HEADERS += \
     headers/Design.h \
+    headers/OpenGlViewer/utilsoperation.h \
     headers/mainappwindow.h \
     headers/mainwindow.h \
     headers/OpenGlViewer/openglviewer.h

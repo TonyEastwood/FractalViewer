@@ -82,8 +82,8 @@ OpenGlViewer::OpenGlViewer( QWidget *parent)
     light_ambient[2]=0.4;
     light_ambient[3]=0.4;
 
-    minMaxXYZ[0]=minMaxXYZ[2]=minMaxXYZ[4]=100000000;
-    minMaxXYZ[1]=minMaxXYZ[3]=minMaxXYZ[5]=-100000000;
+    minMaxXYZ[0]=minMaxXYZ[2]=minMaxXYZ[4]=100000000;   //min X Y Z
+    minMaxXYZ[1]=minMaxXYZ[3]=minMaxXYZ[5]=-100000000;  //max X Y Z
 
     scaleSpeed = 0.001;
     //  scaleWheel = orthoCoefficient * maxOrigin*0.1;
@@ -106,6 +106,10 @@ OpenGlViewer::OpenGlViewer( QWidget *parent)
 
     translateX=0;
     translateY=0;
+
+
+    sizeDrawVertex=0;
+
 
 
 }
@@ -143,7 +147,7 @@ void OpenGlViewer::initializeGL() {
     if (!success)
     {
         f->glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-       qDebug()  << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog;
+        qDebug()  << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog;
     }
     // Link shaders
     shaderProgram = f->glCreateProgram();
@@ -198,6 +202,8 @@ void OpenGlViewer::initializeGL() {
     GPUprojectionMatrix=f->glGetUniformLocation(shaderProgram, "projMatrix");
     GPUlightPosition=f->glGetUniformLocation(shaderProgram, "LightPosition");
     GPUlightColor=f->glGetUniformLocation(shaderProgram, "lightColor");
+
+
 }
 void OpenGlViewer::resizeGL(int w, int h) {
     glMatrixMode(GL_PROJECTION);
@@ -335,140 +341,205 @@ void OpenGlViewer::keyReleaseEvent(QKeyEvent *event)
     //    }
 }
 
-//void OpenGlViewer::findMinMaxForStl(MyMesh *_object)
-//{
-//    for(int i=0;i<_object->vn;++i)
-//    {
-//        if(minMaxXYZ[0]>_object->vert[i].P().X())
-//            minMaxXYZ[0]=_object->vert[i].P().X();
-//        if(minMaxXYZ[1]<_object->vert[i].P().X())
-//            minMaxXYZ[1]=_object->vert[i].P().X();
+void OpenGlViewer::findMinMaxForStl()
+{
+    for(int i=0;i<sizeDrawVertex;i+=3)
+    {
+        if(minMaxXYZ[0]>drawVertex[i])
+            minMaxXYZ[0]=drawVertex[i];
+        if(minMaxXYZ[1]<drawVertex[i])
+            minMaxXYZ[1]=drawVertex[i];
 
-//        if(minMaxXYZ[2]>_object->vert[i].P().Y())
-//            minMaxXYZ[2]=_object->vert[i].P().Y();
-//        if(minMaxXYZ[3]<_object->vert[i].P().Y())
-//            minMaxXYZ[3]=_object->vert[i].P().Y();
+        if(minMaxXYZ[2]>drawVertex[i+1])
+            minMaxXYZ[2]=drawVertex[i+1];
+        if(minMaxXYZ[3]<drawVertex[i+1])
+            minMaxXYZ[3]=drawVertex[i+1];
 
-//        if(minMaxXYZ[4]>_object->vert[i].P().Z())
-//            minMaxXYZ[4]=_object->vert[i].P().Z();
-//        if(minMaxXYZ[5]<_object->vert[i].P().Z())
-//            minMaxXYZ[5]=_object->vert[i].P().Z();
-//    }
-//}
+        if(minMaxXYZ[4]>drawVertex[i+2])
+            minMaxXYZ[4]=drawVertex[i+2];
+        if(minMaxXYZ[5]<drawVertex[i+2])
+            minMaxXYZ[5]=drawVertex[i+2];
+    }
+}
 
-
-
-
-
-//void OpenGlViewer::InitMaxOrigin()
-//{
-//    if((*drawFirstObject).fn!=0)
-//    {
-//        minMaxXYZ[0]=minMaxXYZ[2]=minMaxXYZ[4]=100000000;
-//        minMaxXYZ[1]=minMaxXYZ[3]=minMaxXYZ[5]=-100000000;
-//        findMinMaxForStl(drawFirstObject);
-//    }
-
-//    if((*drawSecondObject).fn!=0)
-//        findMinMaxForStl(drawSecondObject);
+int OpenGlViewer::getSizeTriangleFractal(int n, int Depth)
+{
+    int result=5;
+    --Depth;
+    for(int i=0;i<Depth;++i)
+        result=result*4+1;
+    return n*result;
+}
 
 
-//    double distanceX=abs((minMaxXYZ[1]-minMaxXYZ[0]));
-//    double distanceY=abs((minMaxXYZ[3]-minMaxXYZ[2]));
-//    double distanceZ=abs((minMaxXYZ[5]-minMaxXYZ[4]));
 
 
-//    //transformMatrix.setToIdentity();
-//    maxOrigin=distanceX;
 
-//    if(maxOrigin<distanceY)
-//        maxOrigin=distanceY;
-//    if(maxOrigin<distanceZ)
-//        maxOrigin=distanceZ;
+void OpenGlViewer::InitMaxOrigin()
+{
 
-//    //  glMatrixMode(GL_MODELVIEW);
-//    //  glLoadIdentity();
-//    //glTranslatef(-(minMaxXYZ[1] + minMaxXYZ[0])/2.0f,-(minMaxXYZ[3] + minMaxXYZ[2])/2.0f,-(minMaxXYZ[4] + minMaxXYZ[5])/2.0f);
+    minMaxXYZ[0]=minMaxXYZ[2]=minMaxXYZ[4]=100000000;
+    minMaxXYZ[1]=minMaxXYZ[3]=minMaxXYZ[5]=-100000000;
+    findMinMaxForStl();
 
-//}
+
+
+
+
+    double distanceX=abs((minMaxXYZ[1]-minMaxXYZ[0]));
+    double distanceY=abs((minMaxXYZ[3]-minMaxXYZ[2]));
+    double distanceZ=abs((minMaxXYZ[5]-minMaxXYZ[4]));
+
+
+    maxOrigin=distanceX;
+
+    if(maxOrigin<distanceY)
+        maxOrigin=distanceY;
+    if(maxOrigin<distanceZ)
+        maxOrigin=distanceZ;
+
+
+}
 
 void OpenGlViewer::updateDrawVertex()
 {
 
-//    if(drawVertex!=nullptr)
-//        delete[] drawVertex;
+    //    if(drawVertex!=nullptr)
+    //        delete[] drawVertex;
 
-//    int n=18;
+    //    int n=18;
 
-//    sizeDrawVertex=n*(drawFirstObject->face.size()+drawSecondObject->face.size());
-
-
-//    drawVertex=new GLfloat[sizeDrawVertex];
+    //    sizeDrawVertex=n*(drawFirstObject->face.size()+drawSecondObject->face.size());
 
 
-//    sizeDrawVertexFirstObject=drawFirstObject->face.size();
-
-//    for(int i=0;i<sizeDrawVertexFirstObject;++i)
-//    {
-//        drawVertex[n*i  ]=(*drawFirstObject).face[i].P0(0).X();
-//        drawVertex[n*i+1]=(*drawFirstObject).face[i].P0(0).Y();
-//        drawVertex[n*i+2]=(*drawFirstObject).face[i].P0(0).Z();
-
-//        drawVertex[n*i+3]=(*drawFirstObject).face[i].N().X();
-//        drawVertex[n*i+4]=(*drawFirstObject).face[i].N().Y();
-//        drawVertex[n*i+5]=(*drawFirstObject).face[i].N().Z();
-
-//        drawVertex[n*i+6]=(*drawFirstObject).face[i].P0(1).X();
-//        drawVertex[n*i+7]=(*drawFirstObject).face[i].P0(1).Y();
-//        drawVertex[n*i+8]=(*drawFirstObject).face[i].P0(1).Z();
-
-//        drawVertex[n*i+9]=(*drawFirstObject).face[i].N().X();
-//        drawVertex[n*i+10]=(*drawFirstObject).face[i].N().Y();
-//        drawVertex[n*i+11]=(*drawFirstObject).face[i].N().Z();
-
-//        drawVertex[n*i+12]=(*drawFirstObject).face[i].P0(2).X();
-//        drawVertex[n*i+13]=(*drawFirstObject).face[i].P0(2).Y();
-//        drawVertex[n*i+14]=(*drawFirstObject).face[i].P0(2).Z();
-
-//        drawVertex[n*i+15]=(*drawFirstObject).face[i].N().X();
-//        drawVertex[n*i+16]=(*drawFirstObject).face[i].N().Y();
-//        drawVertex[n*i+17]=(*drawFirstObject).face[i].N().Z();
-//    }
-//    sizeDrawVertexFirstObject*=n;
-
-//    int  size2=drawSecondObject->face.size();
-
-//    for(int i=0;i<size2;++i)
-//    {
-//        drawVertex[sizeDrawVertexFirstObject + n*i  ]=(*drawSecondObject).face[i].P0(0).X();
-//        drawVertex[sizeDrawVertexFirstObject +n*i+1]=(*drawSecondObject).face[i].P0(0).Y();
-//        drawVertex[sizeDrawVertexFirstObject +n*i+2]=(*drawSecondObject).face[i].P0(0).Z();
-
-//        drawVertex[sizeDrawVertexFirstObject +n*i+3]=(*drawSecondObject).face[i].N().X();
-//        drawVertex[sizeDrawVertexFirstObject +n*i+4]=(*drawSecondObject).face[i].N().Y();
-//        drawVertex[sizeDrawVertexFirstObject +n*i+5]=(*drawSecondObject).face[i].N().Z();
-
-//        drawVertex[sizeDrawVertexFirstObject +n*i+6]=(*drawSecondObject).face[i].P0(1).X();
-//        drawVertex[sizeDrawVertexFirstObject +n*i+7]=(*drawSecondObject).face[i].P0(1).Y();
-//        drawVertex[sizeDrawVertexFirstObject +n*i+8]=(*drawSecondObject).face[i].P0(1).Z();
-
-//        drawVertex[sizeDrawVertexFirstObject +n*i+9]=(*drawSecondObject).face[i].N().X();
-//        drawVertex[sizeDrawVertexFirstObject +n*i+10]=(*drawSecondObject).face[i].N().Y();
-//        drawVertex[sizeDrawVertexFirstObject +n*i+11]=(*drawSecondObject).face[i].N().Z();
-
-//        drawVertex[sizeDrawVertexFirstObject +n*i+12]=(*drawSecondObject).face[i].P0(2).X();
-//        drawVertex[sizeDrawVertexFirstObject +n*i+13]=(*drawSecondObject).face[i].P0(2).Y();
-//        drawVertex[sizeDrawVertexFirstObject +n*i+14]=(*drawSecondObject).face[i].P0(2).Z();
-
-//        drawVertex[sizeDrawVertexFirstObject +n*i+15]=(*drawSecondObject).face[i].N().X();
-//        drawVertex[sizeDrawVertexFirstObject +n*i+16]=(*drawSecondObject).face[i].N().Y();
-//        drawVertex[sizeDrawVertexFirstObject +n*i+17]=(*drawSecondObject).face[i].N().Z();
-//    }
+    //    drawVertex=new GLfloat[sizeDrawVertex];
 
 
-//    f->glBufferData(GL_ARRAY_BUFFER,  sizeDrawVertex * sizeof(GLfloat), NULL, GL_STATIC_DRAW);
-//    f->glBufferData(GL_ARRAY_BUFFER,  sizeDrawVertex * sizeof(GLfloat), drawVertex, GL_STATIC_DRAW);
-//    update();
+    //    sizeDrawVertexFirstObject=drawFirstObject->face.size();
+
+    //    for(int i=0;i<sizeDrawVertexFirstObject;++i)
+    //    {
+    //        drawVertex[n*i  ]=(*drawFirstObject).face[i].P0(0).X();
+    //        drawVertex[n*i+1]=(*drawFirstObject).face[i].P0(0).Y();
+    //        drawVertex[n*i+2]=(*drawFirstObject).face[i].P0(0).Z();
+
+    //        drawVertex[n*i+3]=(*drawFirstObject).face[i].N().X();
+    //        drawVertex[n*i+4]=(*drawFirstObject).face[i].N().Y();
+    //        drawVertex[n*i+5]=(*drawFirstObject).face[i].N().Z();
+
+    //        drawVertex[n*i+6]=(*drawFirstObject).face[i].P0(1).X();
+    //        drawVertex[n*i+7]=(*drawFirstObject).face[i].P0(1).Y();
+    //        drawVertex[n*i+8]=(*drawFirstObject).face[i].P0(1).Z();
+
+    //        drawVertex[n*i+9]=(*drawFirstObject).face[i].N().X();
+    //        drawVertex[n*i+10]=(*drawFirstObject).face[i].N().Y();
+    //        drawVertex[n*i+11]=(*drawFirstObject).face[i].N().Z();
+
+    //        drawVertex[n*i+12]=(*drawFirstObject).face[i].P0(2).X();
+    //        drawVertex[n*i+13]=(*drawFirstObject).face[i].P0(2).Y();
+    //        drawVertex[n*i+14]=(*drawFirstObject).face[i].P0(2).Z();
+
+    //        drawVertex[n*i+15]=(*drawFirstObject).face[i].N().X();
+    //        drawVertex[n*i+16]=(*drawFirstObject).face[i].N().Y();
+    //        drawVertex[n*i+17]=(*drawFirstObject).face[i].N().Z();
+    //    }
+    //    sizeDrawVertexFirstObject*=n;
+
+    //    int  size2=drawSecondObject->face.size();
+
+    //    for(int i=0;i<size2;++i)
+    //    {
+    //        drawVertex[sizeDrawVertexFirstObject + n*i  ]=(*drawSecondObject).face[i].P0(0).X();
+    //        drawVertex[sizeDrawVertexFirstObject +n*i+1]=(*drawSecondObject).face[i].P0(0).Y();
+    //        drawVertex[sizeDrawVertexFirstObject +n*i+2]=(*drawSecondObject).face[i].P0(0).Z();
+
+    //        drawVertex[sizeDrawVertexFirstObject +n*i+3]=(*drawSecondObject).face[i].N().X();
+    //        drawVertex[sizeDrawVertexFirstObject +n*i+4]=(*drawSecondObject).face[i].N().Y();
+    //        drawVertex[sizeDrawVertexFirstObject +n*i+5]=(*drawSecondObject).face[i].N().Z();
+
+    //        drawVertex[sizeDrawVertexFirstObject +n*i+6]=(*drawSecondObject).face[i].P0(1).X();
+    //        drawVertex[sizeDrawVertexFirstObject +n*i+7]=(*drawSecondObject).face[i].P0(1).Y();
+    //        drawVertex[sizeDrawVertexFirstObject +n*i+8]=(*drawSecondObject).face[i].P0(1).Z();
+
+    //        drawVertex[sizeDrawVertexFirstObject +n*i+9]=(*drawSecondObject).face[i].N().X();
+    //        drawVertex[sizeDrawVertexFirstObject +n*i+10]=(*drawSecondObject).face[i].N().Y();
+    //        drawVertex[sizeDrawVertexFirstObject +n*i+11]=(*drawSecondObject).face[i].N().Z();
+
+    //        drawVertex[sizeDrawVertexFirstObject +n*i+12]=(*drawSecondObject).face[i].P0(2).X();
+    //        drawVertex[sizeDrawVertexFirstObject +n*i+13]=(*drawSecondObject).face[i].P0(2).Y();
+    //        drawVertex[sizeDrawVertexFirstObject +n*i+14]=(*drawSecondObject).face[i].P0(2).Z();
+
+    //        drawVertex[sizeDrawVertexFirstObject +n*i+15]=(*drawSecondObject).face[i].N().X();
+    //        drawVertex[sizeDrawVertexFirstObject +n*i+16]=(*drawSecondObject).face[i].N().Y();
+    //        drawVertex[sizeDrawVertexFirstObject +n*i+17]=(*drawSecondObject).face[i].N().Z();
+    //    }
+
+    for(int i=0;i<sizeDrawVertex;++i)
+        qDebug()<<drawVertex[i];
+    //  f->glBufferData(GL_ARRAY_BUFFER,  (sizeDrawVertex) * sizeof(GLfloat), NULL, GL_STATIC_DRAW);
+    f->glBufferData(GL_ARRAY_BUFFER,  (sizeDrawVertex) * sizeof(GLfloat), drawVertex, GL_STATIC_DRAW);
+    update();
+}
+
+void OpenGlViewer::drawFractalTriangle(std::vector<float> Point1, std::vector<float> Point2, std::vector<float> Point3, int Depth)
+{
+
+
+    if(Depth<1)
+        return;
+
+    std::vector<float> normalToTriangle{0,0,0};
+    UtilsOperation::vectorCrossProd(Point1,Point2,Point3,normalToTriangle);
+
+    drawVertex[sizeDrawVertex++]=Point1[0];
+    drawVertex[sizeDrawVertex++]=Point1[1];
+    drawVertex[sizeDrawVertex++]=Point1[2];
+
+    drawVertex[sizeDrawVertex++]=normalToTriangle[0];
+    drawVertex[sizeDrawVertex++]=normalToTriangle[1];
+    drawVertex[sizeDrawVertex++]=normalToTriangle[2];
+
+    drawVertex[sizeDrawVertex++]=Point2[0];
+    drawVertex[sizeDrawVertex++]=Point2[1];
+    drawVertex[sizeDrawVertex++]=Point2[2];
+
+    drawVertex[sizeDrawVertex++]=normalToTriangle[0];
+    drawVertex[sizeDrawVertex++]=normalToTriangle[1];
+    drawVertex[sizeDrawVertex++]=normalToTriangle[2];
+
+    drawVertex[sizeDrawVertex++]=Point3[0];
+    drawVertex[sizeDrawVertex++]=Point3[1];
+    drawVertex[sizeDrawVertex++]=Point3[2];
+
+    drawVertex[sizeDrawVertex++]=normalToTriangle[0];
+    drawVertex[sizeDrawVertex++]=normalToTriangle[1];
+    drawVertex[sizeDrawVertex++]=normalToTriangle[2];
+
+
+
+    float x12=(Point1[0]+Point2[0])/2;
+    float y12=(Point1[1]+Point2[1])/2;
+    float z12=(Point1[2]+Point2[2])/2;
+
+    float x23=(Point2[0]+Point3[0])/2;
+    float y23=(Point2[1]+Point3[1])/2;
+    float z23=(Point2[2]+Point3[2])/2;
+
+    float x31=(Point3[0]+Point1[0])/2;
+    float y31=(Point3[1]+Point1[1])/2;
+    float z31=(Point3[2]+Point1[2])/2;
+
+
+
+    drawFractalTriangle({x12,y12,z12},{x23,y23,z23},{x31,y31,z31},Depth-1);
+
+    drawFractalTriangle({Point1[0],Point1[1],Point1[2]},{x12,y12,z12},{x31,y31,z31},Depth-1);
+    drawFractalTriangle({Point2[0],Point2[1],Point2[2]},{x12,y12,z12},{x23,y23,z23},Depth-1);
+    drawFractalTriangle({Point3[0],Point3[1],Point3[2]},{x31,y31,z31},{x23,y23,z23},Depth-1);
+
+
+
+
 }
 
 
@@ -493,6 +564,19 @@ void OpenGlViewer::updateDrawVertex()
 void OpenGlViewer::setLight(bool value)
 {
     isLight=value;
+    update();
+
+    int Depth=10;
+    int n=18;
+    if(drawVertex!=nullptr)
+        delete [] drawVertex;
+
+    drawVertex=new GLfloat[getSizeTriangleFractal(n,Depth)];
+    //qDebug()<<"Size="<<GLfloat(n*pow(3,Depth));
+    drawFractalTriangle({-100,0,0},{100,0,0}, {0,100,0},Depth);
+
+    InitMaxOrigin();
+    updateDrawVertex();
     update();
 }
 

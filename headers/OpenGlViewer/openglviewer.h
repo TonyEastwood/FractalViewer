@@ -23,6 +23,7 @@
 #include <QOpenGLShaderProgram>
 #include <QOpenGLBuffer>
 #include <QOpenGLVertexArrayObject>
+#include "utilsoperation.h"
 namespace Ui {
 class OpenGlViewer;
 }
@@ -57,6 +58,13 @@ private:
 
     void updateDrawVertex();
 
+    void drawFractalTriangle(std::vector<float> Point1, std::vector<float> Point2, std::vector<float> Point3, int Depth);
+
+    void findMinMaxForStl();
+
+    int getSizeTriangleFractal(int n,int Depth);
+
+
 private:
     const uint COUNT_ALIGN_CYCLES=5;
     const double ERROR_ALIGN=0.021f;
@@ -66,6 +74,7 @@ private:
 
 
 private:
+
 
     GLfloat * drawVertex;   //vertex that contain Vertex shader
     uint sizeDrawVertex=0;  //size all of vertex that need to draw
